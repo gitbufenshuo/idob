@@ -1,0 +1,33 @@
+{
+    "bufenshuo": {
+        "#input": {
+            "#concurrentHandlers": 3,
+            "#nums": 3,
+            "#maxInFlight": 200,
+            "#nsqLookupd": "127.0.0.1:4161",
+            "#topic": "maction",
+            "#channel": "mjoin",
+            "#reader": {},
+            "#sigStop": true
+        },
+        "#deal": {
+            "#cacheSize": 100000,
+            "#cacheTTL": "2m",
+            "#nums": 3,
+            "syncInterval": "30s",
+            "logInterval": "5s"
+        },
+        "#output": {
+            "#nums": 3,
+            "#nsqd": "127.0.0.1:4150",
+            "#topic": "guga",
+            "#writer": {
+                "write_timeout": "20s",
+                "deflate": true
+            }
+        },
+        "#bundle": {
+            "#bind": [1000, 100]
+        }
+    }
+}

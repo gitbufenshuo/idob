@@ -26,17 +26,17 @@ type pool interface {
 }
 
 // ConfigTerminal terminal: input and output are terminals
-type ConfigTerminal interface {
-	SetHandler(hfunc func(msgBody *bytes.Buffer))
+type configTerminal interface {
+	setHandler(hfunc func(msgBody *bytes.Buffer))
 }
 
 // ConfigDeal two things have to be done
 // 1. how do msgs go into the cache
 // 2. how do msgs get out of the cache (aka. onEvicted)
 // 3. (optional) timertask.
-type ConfigDeal interface {
-	SetCachePolicy(msg2Cache func(msg []byte, c *cache.CLRU), onEvicted func(entry *cache.Entry, msgOut *chan []byte))
-	AddTimerTask(interval string, task func(c *cache.CLRU, wgTimerTask sync.WaitGroup))
+type configDeal interface {
+	setCachePolicy(msg2Cache func(msg *bytes.Buffer, c *cache.CLRU, bufpool *sync.Pool), onEvicted func(entry *cache.Entry, msgOut *chan *bytes.Buffer, bufpool *sync.Pool))
+	addTimerTask(interval string, task func(c *cache.CLRU, wgTimerTask *sync.WaitGroup))
 }
 
 // Bundle is the struct you will use
@@ -56,6 +56,7 @@ func NewBundle(name string) *Bundle {
 		confPre: confPre,
 		flows:   flows,
 	}
+	b.flowmap = make(map[string]interface{})
 	b.initInput()
 	b.initDeal()
 	b.initOutput()
@@ -75,19 +76,19 @@ func (b *Bundle) appendFlows(aflow flow) {
 	b.flows = append(b.flows, aflow)
 }
 func (b *Bundle) bind() {
-	chanbuflen := viper.Get(b.name + "#bundle.#bind")
+	chanbuflen := viper.Get(b.name + ".#bundle.#bind")
 	if chanbuflen == nil {
 		panic(`config field "` + b.name + `.#bundle.#bind" is gone`)
 	}
 	lenofmodules := len(b.flows)
-	buflens := chanbuflen.([]int)
+	buflens := chanbuflen.([]interface{})
 	numofbuf := len(buflens)
 	if numofbuf != lenofmodules-1 {
 		panic(`config field "` + b.name + `.#bundle.#bind" is not enough`)
 	}
 
 	for i := 0; i < numofbuf; i++ {
-		b.bindFlows(buflens[i], b.flows[i], b.flows[i+1])
+		b.bindFlows(int(buflens[i].(float64)), b.flows[i], b.flows[i+1])
 	}
 }
 func (b *Bundle) bindFlows(msgLen int, up upstream, down downstream) {
@@ -108,7 +109,7 @@ func (b *Bundle) Start() chan struct{} {
 }
 
 func (b *Bundle) initInput() {
-	if viper.Get(b.name+"#input") == nil {
+	if viper.Get(b.name+".#input") == nil {
 		panic(`config field "` + b.name + `.#input" is gone`)
 	}
 	in := newNsqInput(b.name)
@@ -120,7 +121,7 @@ func (b *Bundle) initDeal() {
 	index := ""
 	inum := 0
 	for {
-		if viper.Get(b.name+"#deal"+index) == nil {
+		if viper.Get(b.name+".#deal"+index) == nil {
 			if index == "" {
 				panic(`config field "` + b.name + `.#deal" is gone`)
 			}
@@ -135,7 +136,7 @@ func (b *Bundle) initDeal() {
 	log.Infoln("<d><d><d><d> deal module init ok <d><d><d><d>")
 }
 func (b *Bundle) initOutput() {
-	if viper.Get(b.name+"#output") == nil {
+	if viper.Get(b.name+".#output") == nil {
 		panic(`config field "` + b.name + `.#output" is gone`)
 	}
 	o := newNsqOutput(b.name)
@@ -144,22 +145,30 @@ func (b *Bundle) initOutput() {
 	log.Infoln("<o><o><o><o> output module init ok <o><o><o><o>")
 }
 
-// GetInputForConfig returns a input, you can use it to config input handler
-func (b *Bundle) GetInputForConfig() ConfigTerminal {
-	return b.flowmap["#input"].(ConfigTerminal)
+// ConfigInputHandler is
+func (b *Bundle) ConfigInputHandler(hfunc func(msgBody *bytes.Buffer)) {
+	b.flowmap["#input"].(configTerminal).setHandler(hfunc)
 }
 
-// GetOutputForConfig returns a output, you can use it to config output handler
-func (b *Bundle) GetOutputForConfig() ConfigTerminal {
-	return b.flowmap["#output"].(ConfigTerminal)
+//ConfigOutputHandler is
+func (b *Bundle) ConfigOutputHandler(hfunc func(msgBody *bytes.Buffer)) {
+	b.flowmap["#output"].(configTerminal).setHandler(hfunc)
 }
 
-// GetDealForConfig returns a deal, you can use it to config deal
-// idx --> the order in your config file, begin with 0
-func (b *Bundle) GetDealForConfig(idx int) ConfigDeal {
+//ConfigDealCachePolicy is
+func (b *Bundle) ConfigDealCachePolicy(idx int, msg2Cache func(msg *bytes.Buffer, c *cache.CLRU, bufpool *sync.Pool), onEvicted func(entry *cache.Entry, msgOut *chan *bytes.Buffer, bufpool *sync.Pool)) {
 	index := ""
 	if idx != 0 {
 		index = strconv.Itoa(idx)
 	}
-	return b.flowmap["#deal"+index].(ConfigDeal)
+	b.flowmap["#deal"+index].(configDeal).setCachePolicy(msg2Cache, onEvicted)
+}
+
+//ConfigDealTimerTask is
+func (b *Bundle) ConfigDealTimerTask(idx int, interval string, task func(c *cache.CLRU, wgTimerTask *sync.WaitGroup)) {
+	index := ""
+	if idx != 0 {
+		index = strconv.Itoa(idx)
+	}
+	b.flowmap["#deal"+index].(configDeal).addTimerTask(interval, task)
 }

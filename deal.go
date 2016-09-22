@@ -6,13 +6,14 @@ import (
 	"sync"
 	"time"
 
+	log "github.com/Sirupsen/logrus"
 	cache "github.com/khowarizmi/go-clru"
 	"github.com/spf13/viper"
 )
 
 type timerTask struct {
 	dtime time.Duration
-	task  func(d *deal)
+	task  func(c *cache.CLRU, wgTimerTask *sync.WaitGroup)
 }
 
 type deal struct {
@@ -32,7 +33,7 @@ type deal struct {
 }
 
 func newdeal(name string) *deal {
-	confPre := name + "#deal."
+	confPre := name + ".#deal."
 	c := cache.New(viper.GetInt(confPre+"#cacheSize"), viper.GetDuration(confPre+"#cacheTTL"))
 	var wgIn sync.WaitGroup
 	var wgTimerTask sync.WaitGroup
@@ -49,7 +50,7 @@ func newdeal(name string) *deal {
 	return d
 }
 
-func (d *deal) setCachePolicy(msg2Cache func(msg *bytes.Buffer, c *cache.CLRU, bufpool *sync.Pool), onEvicted func(entry *cache.Entry, msgOut *chan *bytes.Buffer, bufpoll *sync.Pool)) {
+func (d *deal) setCachePolicy(msg2Cache func(msg *bytes.Buffer, c *cache.CLRU, bufpool *sync.Pool), onEvicted func(entry *cache.Entry, msgOut *chan *bytes.Buffer, bufpool *sync.Pool)) {
 	d.msg2Cache = msg2Cache
 	d.onEvicted = onEvicted
 	d.c.OnEvicted = func(entry *cache.Entry) {
@@ -57,7 +58,7 @@ func (d *deal) setCachePolicy(msg2Cache func(msg *bytes.Buffer, c *cache.CLRU, b
 	}
 }
 
-func (d *deal) addTimerTask(confField string, task func(d *deal)) {
+func (d *deal) addTimerTask(confField string, task func(c *cache.CLRU, wgTimerTask *sync.WaitGroup)) {
 	timertask := timerTask{}
 	timertask.dtime = viper.GetDuration(d.confPre + confField)
 	timertask.task = task
@@ -82,9 +83,11 @@ func (d *deal) runTimerTask() {
 				break
 			}
 			d.wgTimerTask.Add(1)
-			d.timertask[chosen].task(d)
+
+			d.timertask[chosen].task(d.c, &d.wgTimerTask)
 		}
 		d.wgTimerTask.Done()
+
 	}()
 }
 
@@ -100,6 +103,7 @@ func (d *deal) getBufPool() **sync.Pool {
 }
 
 func (d *deal) start() chan struct{} {
+
 	for i := 0; i < d.nums; i++ {
 		d.wgIn.Add(1)
 		go func() {
@@ -123,6 +127,7 @@ func (d *deal) start() chan struct{} {
 		close(d.timerStop)
 		d.wgTimerTask.Wait()
 		close(*d.msgOut)
+		log.Infoln("<d><d><d><d> deal module stopped ok <d><d><d><d>")
 	}()
 	return nil
 }

@@ -48,6 +48,8 @@ func (nsqoutput nsqOutput) setHandler(hfunc func(*bytes.Buffer)) {
 }
 
 func (nsqoutput *nsqOutput) start() chan struct{} {
+	log.Infoln("----output msgin--->", *nsqoutput.msgIn)
+
 	producer, err := nsq.NewProducer(nsqoutput.nsqd, nsqoutput.conf)
 	if err != nil {
 		log.Errorln("create producer fail", err)
@@ -73,6 +75,7 @@ func (nsqoutput *nsqOutput) start() chan struct{} {
 	go func() {
 		nsqoutput.wgIn.Wait()
 		close(nsqoutput.sigOut)
+		log.Infoln("<o><o><o><o> output module stopped <o><o><o><o>")
 	}()
 	return nsqoutput.sigOut
 }

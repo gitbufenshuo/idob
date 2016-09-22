@@ -68,6 +68,7 @@ func (nsqinput nsqInput) setHandler(hfunc func(*bytes.Buffer)) {
 	nsqinput.handler = hfunc
 }
 func (nsqinput *nsqInput) start() chan struct{} {
+	log.Infoln("-----input msgout-->", *nsqinput.msgOut)
 	nsqinput.consumers = make([]*nsq.Consumer, nsqinput.nums)
 	for idx := range nsqinput.consumers {
 		consumer, err := nsq.NewConsumer(nsqinput.topic+"#ephemeral", nsqinput.channel+"#ephemeral", nsqinput.confs[idx])
@@ -91,6 +92,7 @@ func (nsqinput *nsqInput) start() chan struct{} {
 			signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 			<-sigChan
 			nsqinput.stop()
+			log.Infoln("<i><i><i><i> input module stopped ok <i><i><i><i>")
 		}()
 	}
 	return nil
