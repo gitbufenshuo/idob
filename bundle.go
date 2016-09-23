@@ -27,7 +27,7 @@ type pool interface {
 
 // ConfigTerminal terminal: input and output are terminals
 type configTerminal interface {
-	setHandler(hfunc func(msgBody *bytes.Buffer))
+	setHandler(hfunc func(msgBody *bytes.Buffer) error)
 }
 
 // ConfigDeal two things have to be done
@@ -62,7 +62,7 @@ func NewBundle(name string) *Bundle {
 	b.initOutput()
 
 	b.bind()
-
+	b.encubatePool()
 	return b
 }
 func (b *Bundle) encubatePool() {
@@ -146,12 +146,12 @@ func (b *Bundle) initOutput() {
 }
 
 // ConfigInputHandler is
-func (b *Bundle) ConfigInputHandler(hfunc func(msgBody *bytes.Buffer)) {
+func (b *Bundle) ConfigInputHandler(hfunc func(msgBody *bytes.Buffer) error) {
 	b.flowmap["#input"].(configTerminal).setHandler(hfunc)
 }
 
 //ConfigOutputHandler is
-func (b *Bundle) ConfigOutputHandler(hfunc func(msgBody *bytes.Buffer)) {
+func (b *Bundle) ConfigOutputHandler(hfunc func(msgBody *bytes.Buffer) error) {
 	b.flowmap["#output"].(configTerminal).setHandler(hfunc)
 }
 

@@ -24,7 +24,7 @@ type nsqInput struct {
 	maxInFlight        int
 	consumers          []*nsq.Consumer
 	confs              []*nsq.Config
-	handler            func(*bytes.Buffer)
+	handler            func(*bytes.Buffer) error
 	msgOut             *chan *bytes.Buffer
 	confPre            string
 	sigStop            bool
@@ -59,16 +59,17 @@ func newNsqInput(name string) *nsqInput {
 func (nsqinput *nsqInput) HandleMessage(message *nsq.Message) error {
 	buf := nsqinput.byteBufferPool.Get().(*bytes.Buffer)
 	buf.Write(message.Body)
-	nsqinput.handler(buf)
+	if nsqinput.handler(buf) != nil {
+		return nil
+	}
 	*nsqinput.msgOut <- buf
 	return nil
 }
 
-func (nsqinput nsqInput) setHandler(hfunc func(*bytes.Buffer)) {
+func (nsqinput *nsqInput) setHandler(hfunc func(*bytes.Buffer) error) {
 	nsqinput.handler = hfunc
 }
 func (nsqinput *nsqInput) start() chan struct{} {
-	log.Infoln("-----input msgout-->", *nsqinput.msgOut)
 	nsqinput.consumers = make([]*nsq.Consumer, nsqinput.nums)
 	for idx := range nsqinput.consumers {
 		consumer, err := nsq.NewConsumer(nsqinput.topic+"#ephemeral", nsqinput.channel+"#ephemeral", nsqinput.confs[idx])

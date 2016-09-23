@@ -16,7 +16,7 @@ type nsqOutput struct {
 	nsqd           string
 	wgIn           sync.WaitGroup
 	msgIn          *chan *bytes.Buffer
-	handler        func(*bytes.Buffer)
+	handler        func(*bytes.Buffer) error
 	confPre        string
 	sigOut         chan struct{}
 	conf           *nsq.Config
@@ -43,13 +43,11 @@ func newNsqOutput(name string) *nsqOutput {
 	return &nsqoutput
 }
 
-func (nsqoutput nsqOutput) setHandler(hfunc func(*bytes.Buffer)) {
+func (nsqoutput *nsqOutput) setHandler(hfunc func(*bytes.Buffer) error) {
 	nsqoutput.handler = hfunc
 }
 
 func (nsqoutput *nsqOutput) start() chan struct{} {
-	log.Infoln("----output msgin--->", *nsqoutput.msgIn)
-
 	producer, err := nsq.NewProducer(nsqoutput.nsqd, nsqoutput.conf)
 	if err != nil {
 		log.Errorln("create producer fail", err)
