@@ -60,8 +60,10 @@ func (nsqoutput *nsqOutput) start() chan struct{} {
 			ch := *nsqoutput.msgIn
 			for {
 				if buf, ok := <-ch; ok {
-					nsqoutput.handler(buf)
-					producer.Publish(nsqoutput.topic+"#ephemeral", buf.Bytes())
+					if dropit := nsqoutput.handler(buf); dropit == nil {
+						producer.Publish(nsqoutput.topic+"#ephemeral", buf.Bytes())
+					}
+					buf.Reset()
 					nsqoutput.byteBufferPool.Put(buf)
 				} else {
 					break

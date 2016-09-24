@@ -59,7 +59,9 @@ func newNsqInput(name string) *nsqInput {
 func (nsqinput *nsqInput) HandleMessage(message *nsq.Message) error {
 	buf := nsqinput.byteBufferPool.Get().(*bytes.Buffer)
 	buf.Write(message.Body)
-	if nsqinput.handler(buf) != nil {
+	if dropit := nsqinput.handler(buf); dropit != nil {
+		buf.Reset()
+		nsqinput.byteBufferPool.Put(buf)
 		return nil
 	}
 	*nsqinput.msgOut <- buf
