@@ -166,6 +166,9 @@ func (b *Bundle) ConfigDealCachePolicy(idx int, msg2Cache func(msg *bytes.Buffer
 
 //ConfigDealTimerTask is
 func (b *Bundle) ConfigDealTimerTask(idx int, interval string, task func(c *cache.CLRU, wgTimerTask *sync.WaitGroup)) {
+	if interval[0] == '#' {
+		panic("You need delete '#' in your own config field " + interval)
+	}
 	index := ""
 	if idx != 0 {
 		index = strconv.Itoa(idx)

@@ -60,6 +60,9 @@ func (d *deal) setCachePolicy(msg2Cache func(msg *bytes.Buffer, c *cache.CLRU, b
 
 func (d *deal) addTimerTask(confField string, task func(c *cache.CLRU, wgTimerTask *sync.WaitGroup)) {
 	timertask := timerTask{}
+	if viper.Get(d.confPre+confField) == nil {
+		panic("no config field " + d.confPre + confField)
+	}
 	timertask.dtime = viper.GetDuration(d.confPre + confField)
 	timertask.task = task
 	d.timertask = append(d.timertask, timertask)
