@@ -5,11 +5,21 @@ import (
 	"fmt"
 	"sync"
 
+	"errors"
+
 	cache "github.com/khowarizmi/go-clru"
 )
 
-func hfunc(msgBody *bytes.Buffer) error {
-	msgBody.WriteByte('~')
+func hfuncInput(msgBody *bytes.Buffer) error {
+	if (msgBody.Bytes())[0] == 'a' {
+		return errors.New("")
+	}
+	return nil
+}
+func hfuncOutput(msgBody *bytes.Buffer) error {
+	if (msgBody.Bytes())[0] == 'b' {
+		return errors.New("")
+	}
 	return nil
 }
 func tocache(msg *bytes.Buffer, c *cache.CLRU, bufpool *sync.Pool) {

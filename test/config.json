@@ -5,8 +5,8 @@
             "#nums": 3,
             "#maxInFlight": 200,
             "#nsqLookupd": "127.0.0.1:4161",
-            "#topic": "maction",
-            "#channel": "mjoin",
+            "#topic": "action",
+            "#channel": "actionjoin",
             "#reader": {},
             "#sigStop": true
         },
@@ -20,7 +20,7 @@
         "#output": {
             "#nums": 3,
             "#nsqd": "127.0.0.1:4150",
-            "#topic": "guga",
+            "#topic": "nsqout",
             "#writer": {
                 "write_timeout": "20s",
                 "deflate": true
@@ -28,6 +28,9 @@
         },
         "#bundle": {
             "#bind": [1000, 100]
+        },
+        "#common": {
+            "#sigStop": true
         }
     }
 }
