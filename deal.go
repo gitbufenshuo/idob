@@ -7,7 +7,7 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
-	cache "github.com/khowarizmi/go-clru"
+	cache "github.com/gitbufenshuo/go-clru"
 	"github.com/spf13/viper"
 )
 

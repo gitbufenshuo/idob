@@ -12,7 +12,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/pquerna/ffjson/ffjson"
 
-	cache "github.com/khowarizmi/go-clru"
+	cache "github.com/gitbufenshuo/go-clru"
 )
 
 type Msg struct {

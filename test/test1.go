@@ -7,7 +7,7 @@ import (
 
 	"errors"
 
-	cache "github.com/khowarizmi/go-clru"
+	cache "github.com/gitbufenshuo/go-clru"
 )
 
 func hfuncInput(msgBody *bytes.Buffer) error {
